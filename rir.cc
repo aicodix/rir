@@ -57,7 +57,7 @@ struct Compute
 		for (int i = 0; i < kernel_length; ++i)
 			avg[i] /= val_max;
 
-		const int shift = 6;
+		const int shift = kernel_length/2;
 		int offset = (max_pos-shift+kernel_length)%kernel_length;
 		output_file.write(reinterpret_cast<value *>(avg+offset), kernel_length-offset, 2);
 		output_file.write(reinterpret_cast<value *>(avg), offset, 2);
