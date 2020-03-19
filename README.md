@@ -15,10 +15,10 @@ Play sequence:
 aplay noise.wav
 ```
 
-Start recording and stop recording when noise stops:
+Start recording and interrupt before noise stops:
 
 ```
-arecord -r 48000 -c1 -f S16_LE -V mono input.wav
+arecord -r 48000 -c1 -f S16_LE -V mono -s $((65536 * (30 - 5))) input.wav
 ```
 
 Compute Room Impulse Response:
