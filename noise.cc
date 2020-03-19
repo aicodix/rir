@@ -28,11 +28,11 @@ int main(int argc, char **argv)
 
 	std::random_device rd;
 	typedef std::default_random_engine generator;
-	typedef std::uniform_real_distribution<value> uniform;
-	auto noise = std::bind(uniform(-1, 1), generator(rd()));
+	typedef std::bernoulli_distribution bernoulli;
+	auto noise = std::bind(bernoulli(), generator(rd()));
 	value *input = new value[length];
 	for (int i = 0; i < length; ++i)
-		input[i] = noise();
+		input[i] = 1 - 2 * noise();
 
 	DSP::WriteWAV<value> file(name, rate, bits, 1);
 	for (int i = 0; i < repeat; ++i)
