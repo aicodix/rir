@@ -44,16 +44,18 @@ struct Compute
 				avg[i] += rir[i];
 			input_file.read(input, noise_length);
 		}
+		cmplx val_max;
 		value abs_max = 0;
 		int max_pos = 0;
 		for (int i = 0; i < kernel_length; ++i) {
 			if (abs_max < abs(avg[i])) {
+				val_max = avg[i];
 				abs_max = abs(avg[i]);
 				max_pos = i;
 			}
 		}
 		for (int i = 0; i < kernel_length; ++i)
-			avg[i] /= abs_max;
+			avg[i] /= val_max;
 		output_file.write(reinterpret_cast<value *>(avg+max_pos), kernel_length-max_pos);
 		output_file.write(reinterpret_cast<value *>(avg), max_pos);
 		//for (int i = 0; i < kernel_length; ++i)
