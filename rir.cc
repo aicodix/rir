@@ -56,8 +56,12 @@ struct Compute
 		}
 		for (int i = 0; i < kernel_length; ++i)
 			avg[i] /= val_max;
-		output_file.write(reinterpret_cast<value *>(avg+max_pos), kernel_length-max_pos);
-		output_file.write(reinterpret_cast<value *>(avg), max_pos);
+
+		const int shift = 6;
+		int offset = (max_pos-shift+kernel_length)%kernel_length;
+		output_file.write(reinterpret_cast<value *>(avg+offset), kernel_length-offset, 2);
+		output_file.write(reinterpret_cast<value *>(avg), offset, 2);
+
 		//for (int i = 0; i < kernel_length; ++i)
 		//	std::cout << i << " " << avg[i].real() << " " << avg[i].imag() << std::endl;
 	}
