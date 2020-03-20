@@ -25,7 +25,7 @@ struct Compute
 	cmplx tmp[kernel_length];
 	cmplx rir[kernel_length];
 	cmplx avg[kernel_length];
-	Compute(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &noise_file)
+	Compute(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &noise_file, int clip_length)
 	{
 		noise_file.read(input, noise_length);
 		fwd(kernel, input);
@@ -57,10 +57,13 @@ struct Compute
 		for (int i = 0; i < kernel_length; ++i)
 			avg[i] /= val_max;
 
-		const int shift = kernel_length/2;
+		if (clip_length < 0)
+			clip_length = kernel_length;
+		int shift = (clip_length-1)/2;
 		int offset = (max_pos-shift+kernel_length)%kernel_length;
-		output_file.write(reinterpret_cast<value *>(avg+offset), kernel_length-offset, 2);
-		output_file.write(reinterpret_cast<value *>(avg), offset, 2);
+		int rest = kernel_length-offset;
+		output_file.write(reinterpret_cast<value *>(avg+offset), std::min(clip_length, rest), 2);
+		output_file.write(reinterpret_cast<value *>(avg), std::max(0, clip_length-rest), 2);
 
 		const int max_paths = 30;
 		int paths[max_paths] = { 0 };
@@ -91,8 +94,8 @@ struct Compute
 
 int main(int argc, char **argv)
 {
-	if (argc != 5) {
-		std::cerr << "usage: " << argv[0] << " OUTPUT INPUT NOISE LENGTH" << std::endl;
+	if (argc != 6) {
+		std::cerr << "usage: " << argv[0] << " OUTPUT INPUT NOISE LENGTH CLIP" << std::endl;
 		return 1;
 	}
 
@@ -100,6 +103,7 @@ int main(int argc, char **argv)
 	const char *input_name = argv[2];
 	const char *noise_name = argv[3];
 	int noise_length = std::atoi(argv[4]);
+	int clip_length = std::atoi(argv[5]);
 
 	typedef float value;
 	typedef DSP::Complex<value> cmplx;
@@ -121,16 +125,16 @@ int main(int argc, char **argv)
 
 	switch (noise_length) {
 	case 16384:
-		new Compute<cmplx, 16384>(output_file, input_file, noise_file);
+		new Compute<cmplx, 16384>(output_file, input_file, noise_file, clip_length);
 		break;
 	case 65536:
-		new Compute<cmplx, 65536>(output_file, input_file, noise_file);
+		new Compute<cmplx, 65536>(output_file, input_file, noise_file, clip_length);
 		break;
 	case 262144:
-		new Compute<cmplx, 262144>(output_file, input_file, noise_file);
+		new Compute<cmplx, 262144>(output_file, input_file, noise_file, clip_length);
 		break;
 	case 1048576:
-		new Compute<cmplx, 1048576>(output_file, input_file, noise_file);
+		new Compute<cmplx, 1048576>(output_file, input_file, noise_file, clip_length);
 		break;
 	default:
 		std::cerr << "Unsupported noise length." << std::endl;
