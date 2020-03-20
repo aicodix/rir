@@ -5,7 +5,7 @@ CXX = clang++ -stdlib=libc++
 
 .PHONY: all
 
-all: rir noise
+all: rir noise chirp
 
 rir: rir.cc
 	$(CXX) $(CXXFLAGS) $< -o $@
@@ -13,8 +13,11 @@ rir: rir.cc
 noise: noise.cc
 	$(CXX) $(CXXFLAGS) $< -o $@
 
+chirp: chirp.cc
+	$(CXX) $(CXXFLAGS) $< -o $@
+
 .PHONY: clean
 
 clean:
-	rm -f rir noise
+	rm -f rir noise chirp
 
