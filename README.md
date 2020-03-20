@@ -41,7 +41,7 @@ Play signal:
 aplay chirps.wav
 ```
 
-Start recording and interrupt before noise stops:
+Start recording and interrupt before chirping stops:
 
 ```
 arecord -r 48000 -c1 -f S16_LE -V mono -s $((65536 * (30 - 5))) input.wav
