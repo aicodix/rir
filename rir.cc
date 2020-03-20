@@ -13,28 +13,28 @@ Copyright 2020 Ahmet Inan <inan@aicodix.de>
 #include "fft.hh"
 #include "wav.hh"
 
-template <typename cmplx, int noise_length>
+template <typename cmplx, int filter_length>
 struct Compute
 {
-	static const int kernel_length = noise_length / 2;
+	static const int kernel_length = filter_length / 2;
 	typedef typename cmplx::value_type value;
-	DSP::RealToHalfComplexTransform<noise_length, cmplx> fwd;
+	DSP::RealToHalfComplexTransform<filter_length, cmplx> fwd;
 	DSP::FastFourierTransform<kernel_length, cmplx, 1> bwd;
-	value input[noise_length];
+	value input[filter_length];
 	cmplx kernel[kernel_length];
 	cmplx tmp[kernel_length];
 	cmplx rir[kernel_length];
 	cmplx avg[kernel_length];
-	Compute(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &noise_file, int clip_length)
+	Compute(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &filter_file, int clip_length)
 	{
-		noise_file.read(input, noise_length);
+		filter_file.read(input, filter_length);
 		fwd(kernel, input);
 		for (int i = 0; i < kernel_length; ++i)
 			kernel[i] = conj(kernel[i]);
 		for (int i = 0; i < kernel_length; ++i)
-			kernel[i] /= value(noise_length) * sqrt(kernel_length);
-		input_file.skip(noise_length / 2);
-		input_file.read(input, noise_length);
+			kernel[i] /= value(filter_length) * sqrt(kernel_length);
+		input_file.skip(filter_length / 2);
+		input_file.read(input, filter_length);
 		while (input_file.good()) {
 			fwd(tmp, input);
 			for (int i = 0; i < kernel_length; ++i)
@@ -42,7 +42,7 @@ struct Compute
 			bwd(rir, tmp);
 			for (int i = 0; i < kernel_length; ++i)
 				avg[i] += rir[i];
-			input_file.read(input, noise_length);
+			input_file.read(input, filter_length);
 		}
 		cmplx val_max;
 		value abs_max = 0;
@@ -94,50 +94,49 @@ struct Compute
 
 int main(int argc, char **argv)
 {
-	if (argc != 6) {
-		std::cerr << "usage: " << argv[0] << " OUTPUT INPUT NOISE LENGTH CLIP" << std::endl;
+	if (argc != 5) {
+		std::cerr << "usage: " << argv[0] << " OUTPUT INPUT FILTER CLIP" << std::endl;
 		return 1;
 	}
 
 	const char *output_name = argv[1];
 	const char *input_name = argv[2];
-	const char *noise_name = argv[3];
-	int noise_length = std::atoi(argv[4]);
-	int clip_length = std::atoi(argv[5]);
+	const char *filter_name = argv[3];
+	int clip_length = std::atoi(argv[4]);
 
 	typedef float value;
 	typedef DSP::Complex<value> cmplx;
 
-	DSP::ReadWAV<value> noise_file(noise_name);
+	DSP::ReadWAV<value> filter_file(filter_name);
 	DSP::ReadWAV<value> input_file(input_name);
 
-	if (noise_file.channels() != 1 || input_file.channels() != 1) {
+	if (filter_file.channels() != 1 || input_file.channels() != 1) {
 		std::cerr << "Only real signal (one channel) supported." << std::endl;
 		return 1;
 	}
 
-	if (noise_file.rate() != input_file.rate()) {
-		std::cerr << "Samplerate of input and noise files don't match." << std::endl;
+	if (filter_file.rate() != input_file.rate()) {
+		std::cerr << "Samplerates of input and filter files don't match." << std::endl;
 		return 1;
 	}
 
 	DSP::WriteWAV<value> output_file(output_name, input_file.rate(), input_file.bits(), 2);
 
-	switch (noise_length) {
+	switch (filter_file.frames()) {
 	case 16384:
-		new Compute<cmplx, 16384>(output_file, input_file, noise_file, clip_length);
+		new Compute<cmplx, 16384>(output_file, input_file, filter_file, clip_length);
 		break;
 	case 65536:
-		new Compute<cmplx, 65536>(output_file, input_file, noise_file, clip_length);
+		new Compute<cmplx, 65536>(output_file, input_file, filter_file, clip_length);
 		break;
 	case 262144:
-		new Compute<cmplx, 262144>(output_file, input_file, noise_file, clip_length);
+		new Compute<cmplx, 262144>(output_file, input_file, filter_file, clip_length);
 		break;
 	case 1048576:
-		new Compute<cmplx, 1048576>(output_file, input_file, noise_file, clip_length);
+		new Compute<cmplx, 1048576>(output_file, input_file, filter_file, clip_length);
 		break;
 	default:
-		std::cerr << "Unsupported noise length." << std::endl;
+		std::cerr << "Unsupported filter length." << std::endl;
 		return 1;
 	}
 	return 0;

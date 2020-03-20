@@ -6,7 +6,7 @@ Compute Room [Impulse Response](https://en.wikipedia.org/wiki/Impulse_response) 
 Generate a 48 KHz, 16 bit, 65536 samples long noise sequence, repeated 30 times:
 
 ```
-./noise noise.wav 48000 16 65536 30
+./noise noise.wav filter.wav 48000 16 65536 30
 ```
 
 Play sequence:
@@ -24,7 +24,7 @@ arecord -r 48000 -c1 -f S16_LE -V mono -s $((65536 * (30 - 5))) input.wav
 Compute Room Impulse Response and output only (use -1 for all) 4097 samples centered at the peak:
 
 ```
-./rir output.wav input.wav noise.wav 65536 4097
+./rir output.wav input.wav filter.wav 4097
 ```
 
 ### Using a chirp signal instead of noise
@@ -50,7 +50,7 @@ arecord -r 48000 -c1 -f S16_LE -V mono -s $((65536 * (30 - 5))) input.wav
 Compute Room Impulse Response and output only (use -1 for all) 4097 samples centered at the peak:
 
 ```
-./rir output.wav input.wav filter.wav 65536 4097
+./rir output.wav input.wav filter.wav 4097
 ```
 
 ### [rir.cc](rir.cc)
