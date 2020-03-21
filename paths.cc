@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
 	for (int i = 0; i < max_paths; ++i) {
 		value ampl = abs(input[paths[i]]);
-		int delay = (paths[i] - paths[0] + length) % length;
+		int delay = paths[i] - paths[0];
 		value msec = 1000 * value(delay) / input_file.rate();
 		value rad = arg(input[paths[i]]);
 		std::cout << ampl << " " << msec << " " << rad << std::endl;
