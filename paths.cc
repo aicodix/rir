@@ -40,8 +40,10 @@ int main(int argc, char **argv)
 
 	const int max_paths = 30;
 	int paths[max_paths] = { 0 };
-	for (int k = 0; k < length; ++k) {
-		if (abs(input[paths[max_paths-1]]) < abs(input[k])) {
+	for (int k = 1; k < length-1; ++k) {
+		if (abs(input[k-1]) < abs(input[k]) &&
+			abs(input[k]) > abs(input[k+1]) &&
+			abs(input[paths[max_paths-1]]) < abs(input[k])) {
 			for (int j = 0; j < max_paths; ++j) {
 				if (abs(input[paths[j]]) < abs(input[k])) {
 					for (int i = max_paths-1; i > j; --i)
@@ -52,6 +54,13 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+	if (0) {
+		for (int i = 0; i < max_paths; ++i)
+			std::cout << paths[i] << " 1" << std::endl;
+		return 0;
+	}
+
 	for (int i = 0; i < max_paths; ++i) {
 		value ampl = abs(input[paths[i]]);
 		int delay = (paths[i] - paths[0] + length) % length;
