@@ -65,3 +65,7 @@ Compute Room [Impulse Response](https://en.wikipedia.org/wiki/Impulse_response).
 
 [Chirp](https://en.wikipedia.org/wiki/Chirp) generator with repeating of signal.
 
+### [paths.cc](paths.cc)
+
+Show strongest paths
+

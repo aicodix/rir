@@ -6,10 +6,7 @@ Copyright 2020 Ahmet Inan <inan@aicodix.de>
 
 #include <iostream>
 #include <cmath>
-#include <random>
-#include <functional>
 #include "complex.hh"
-#include "utils.hh"
 #include "fft.hh"
 #include "wav.hh"
 
@@ -64,31 +61,6 @@ struct Compute
 		int rest = kernel_length-offset;
 		output_file.write(reinterpret_cast<value *>(avg+offset), std::min(clip_length, rest), 2);
 		output_file.write(reinterpret_cast<value *>(avg), std::max(0, clip_length-rest), 2);
-
-		const int max_paths = 30;
-		int paths[max_paths] = { 0 };
-		for (int k = 0; k < kernel_length; ++k) {
-			if (abs(avg[paths[max_paths-1]]) < abs(avg[k])) {
-				for (int j = 0; j < max_paths; ++j) {
-					if (abs(avg[paths[j]]) < abs(avg[k])) {
-						for (int i = max_paths-1; i > j; --i)
-							paths[i] = paths[i-1];
-						paths[j] = k;
-						break;
-					}
-				}
-			}
-		}
-		for (int i = 0; i < max_paths; ++i) {
-			value ampl = abs(avg[paths[i]]);
-			int delay = (paths[i] - paths[0] + kernel_length) % kernel_length;
-			value msec = 1000 * value(delay) / input_file.rate();
-			value rad = arg(avg[paths[i]]);
-			std::cout << ampl << " " << msec << " " << rad << std::endl;
-		}
-
-		//for (int i = 0; i < kernel_length; ++i)
-		//	std::cout << i << " " << avg[i].real() << " " << avg[i].imag() << std::endl;
 	}
 };
 
