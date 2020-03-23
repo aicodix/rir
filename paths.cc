@@ -11,12 +11,13 @@ Copyright 2020 Ahmet Inan <inan@aicodix.de>
 
 int main(int argc, char **argv)
 {
-	if (argc != 2) {
-		std::cerr << "usage: " << argv[0] << " INPUT" << std::endl;
+	if (argc != 3) {
+		std::cerr << "usage: " << argv[0] << " INPUT COUNT" << std::endl;
 		return 1;
 	}
 
 	const char *input_name = argv[1];
+	const int max_paths = std::atoi(argv[2]);
 
 	typedef float value;
 	typedef DSP::Complex<value> cmplx;
@@ -38,8 +39,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	const int max_paths = 30;
-	int paths[max_paths] = { 0 };
+	int *paths = new int[max_paths];
+	for (int i = 0; i < max_paths; ++i)
+		paths[i] = 0;
 	for (int k = 1; k < length-1; ++k) {
 		if (abs(input[k-1]) < abs(input[k]) &&
 			abs(input[k]) > abs(input[k+1]) &&
