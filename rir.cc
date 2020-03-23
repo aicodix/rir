@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	DSP::WriteWAV<value> output_file(output_name, input_file.rate(), input_file.bits(), 2);
+	DSP::WriteWAV<value> output_file(output_name, input_file.rate() / 2, input_file.bits(), 2);
 
 	switch (filter_file.frames()) {
 	case 16384:
