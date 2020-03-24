@@ -14,53 +14,100 @@ template <typename cmplx, int filter_length>
 struct Compute
 {
 	static const int kernel_length = filter_length / 2;
+	const int filter_count;
 	typedef typename cmplx::value_type value;
 	DSP::RealToHalfComplexTransform<filter_length, cmplx> fwd;
 	DSP::FastFourierTransform<kernel_length, cmplx, 1> bwd;
 	value input[filter_length];
-	cmplx kernel[kernel_length];
+	cmplx fdom[kernel_length];
 	cmplx tmp[kernel_length];
-	cmplx rir[kernel_length];
 	cmplx avg[kernel_length];
-	Compute(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &filter_file, int clip_length)
+	Compute(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &filter_file, int clip_length) : filter_count(filter_file.channels())
 	{
-		filter_file.read(input, filter_length);
-		fwd(kernel, input);
-		for (int i = 0; i < kernel_length; ++i)
-			kernel[i] = conj(kernel[i]);
-		for (int i = 0; i < kernel_length; ++i)
-			kernel[i] /= value(filter_length) * sqrt(kernel_length);
-		input_file.skip(filter_length / 2);
-		input_file.read(input, filter_length);
-		while (input_file.good()) {
-			fwd(tmp, input);
-			for (int i = 0; i < kernel_length; ++i)
-				tmp[i] *= kernel[i];
-			bwd(rir, tmp);
-			for (int i = 0; i < kernel_length; ++i)
-				avg[i] += rir[i];
-			input_file.read(input, filter_length);
+		value *frame = new value[filter_count];
+		value *filter = new value[filter_length*filter_count];
+		for (int j = 0; j < filter_length; ++j) {
+			filter_file.read(frame, 1);
+			for (int i = 0; i < filter_count; ++i)
+				filter[filter_length*i+j] = frame[i];
 		}
-		cmplx val_max;
-		value abs_max = 0;
-		int max_pos = 0;
-		for (int i = 0; i < kernel_length; ++i) {
-			if (abs_max < abs(avg[i])) {
-				val_max = avg[i];
-				abs_max = abs(avg[i]);
-				max_pos = i;
+		cmplx *kernel = new cmplx[kernel_length*filter_count];
+		for (int i = 0; i < filter_count; ++i)
+			fwd(kernel+kernel_length*i, filter+filter_length*i);
+		delete[] filter;
+		for (int i = 0; i < kernel_length*filter_count; ++i)
+			kernel[i] = conj(kernel[i]);
+		for (int i = 0; i < kernel_length*filter_count; ++i)
+			kernel[i] /= value(filter_length) * sqrt(kernel_length);
+		cmplx *rir = new cmplx[kernel_length*filter_count];
+		cmplx *val_max = new cmplx[filter_count];
+		value *abs_max = new value[filter_count];
+		int *pos_max = new int[filter_count];
+		bool *filter_used = new bool[filter_count];
+		for (int i = 0; i < filter_count; ++i)
+			filter_used[i] = false;
+		int last = -1;
+		int count = 0;
+		input_file.skip(filter_length * 1 / 2);
+		while (input_file.good()) {
+			for (int i = 0; i < filter_length/2; ++i)
+				input[i] = input[i+filter_length/2];
+			input_file.read(input+filter_length/2, filter_length/2);
+			fwd(fdom, input);
+			for (int j = 0; j < filter_count; ++j) {
+				for (int i = 0; i < kernel_length; ++i)
+					tmp[i] = fdom[i] * kernel[kernel_length*j+i];
+				bwd(rir+kernel_length*j, tmp);
+				val_max[j] = 0;
+				abs_max[j] = 0;
+				pos_max[j] = 0;
+				for (int i = 0; i < kernel_length; ++i) {
+					if (abs_max[j] < abs(rir[kernel_length*j+i])) {
+						val_max[j] = rir[kernel_length*j+i];
+						abs_max[j] = abs(rir[kernel_length*j+i]);
+						pos_max[j] = i;
+					}
+				}
+			}
+			int max0 = 0, max1 = 0;
+			for (int i = 1; i < filter_count; ++i) {
+				if (abs_max[max0] < abs_max[i]) {
+					max1 = max0;
+					max0 = i;
+				}
+			}
+			int chosen = max0;
+			if (filter_used[chosen]) {
+				chosen = last = -1;
+			} else if (max0 != max1 && abs_max[max0] < 10 * abs_max[max1]) {
+				chosen = -1;
+			} else if (last != chosen) {
+				last = chosen;
+				chosen = -1;
+			} else {
+				filter_used[chosen] = true;
+				if (clip_length < 0)
+					clip_length = kernel_length;
+				int shift = (clip_length-1)/2;
+				int offset = (pos_max[chosen]-shift+kernel_length)%kernel_length;
+				int rest = kernel_length-offset;
+				for (int i = 0; i < std::min(clip_length, rest); ++i)
+					avg[i] += rir[kernel_length*chosen+offset+i] / val_max[chosen];
+				for (int i = 0; i < std::max(0, clip_length-rest); ++i)
+					avg[std::min(clip_length, rest)+i] += rir[kernel_length*chosen+i] / val_max[chosen];
+				++count;
 			}
 		}
-		for (int i = 0; i < kernel_length; ++i)
-			avg[i] /= val_max;
-
-		if (clip_length < 0)
-			clip_length = kernel_length;
-		int shift = (clip_length-1)/2;
-		int offset = (max_pos-shift+kernel_length)%kernel_length;
-		int rest = kernel_length-offset;
-		output_file.write(reinterpret_cast<value *>(avg+offset), std::min(clip_length, rest), 2);
-		output_file.write(reinterpret_cast<value *>(avg), std::max(0, clip_length-rest), 2);
+		for (int i = 0; i < clip_length; ++i)
+			avg[i] /= count;
+		output_file.write(reinterpret_cast<value *>(avg), clip_length);
+		delete[] filter_used;
+		delete[] val_max;
+		delete[] abs_max;
+		delete[] pos_max;
+		delete[] frame;
+		delete[] kernel;
+		delete[] rir;
 	}
 };
 
@@ -82,7 +129,7 @@ int main(int argc, char **argv)
 	DSP::ReadWAV<value> filter_file(filter_name);
 	DSP::ReadWAV<value> input_file(input_name);
 
-	if (filter_file.channels() != 1 || input_file.channels() != 1) {
+	if (input_file.channels() != 1) {
 		std::cerr << "Only real signal (one channel) supported." << std::endl;
 		return 1;
 	}

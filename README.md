@@ -3,25 +3,25 @@ Compute Room [Impulse Response](https://en.wikipedia.org/wiki/Impulse_response) 
 
 ### Quick start
 
-Generate a 48 KHz, 16 bit, 65536 samples long noise sequence, repeated 30 times:
+Generate 48 KHz, 16 bit, 65536 samples long noise sequences with 30 different seeds (each sequence repeated two times):
 
 ```
 ./noise noise.wav filter.wav 48000 16 65536 30
 ```
 
-Play sequence:
+Start recording and interrupt after noise stops:
+
+```
+arecord -r 48000 -c1 -f S16_LE -V mono -s $((65536 * 2 * (30 + 5))) input.wav
+```
+
+Play sequences:
 
 ```
 aplay noise.wav
 ```
 
-Start recording and interrupt before noise stops:
-
-```
-arecord -r 48000 -c1 -f S16_LE -V mono -s $((65536 * (30 - 5))) input.wav
-```
-
-Compute Room Impulse Response and output only (use -1 for all) 4097 samples centered at the peak:
+Compute Room Impulse Response and output only 4097 (use -1 for all) samples, centered at the peak:
 
 ```
 ./rir output.wav input.wav filter.wav 4097
@@ -47,7 +47,7 @@ Start recording and interrupt before chirping stops:
 arecord -r 48000 -c1 -f S16_LE -V mono -s $((65536 * (30 - 5))) input.wav
 ```
 
-Compute Room Impulse Response and output only (use -1 for all) 4097 samples centered at the peak:
+Compute Room Impulse Response and output only 4097 (use -1 for all) samples, centered at the peak:
 
 ```
 ./rir output.wav input.wav filter.wav 4097
@@ -59,7 +59,7 @@ Compute Room [Impulse Response](https://en.wikipedia.org/wiki/Impulse_response).
 
 ### [noise.cc](noise.cc)
 
-[Pseudorandom noise](https://en.wikipedia.org/wiki/Pseudorandom_noise) generator with sequence repeating.
+[Pseudorandom noise](https://en.wikipedia.org/wiki/Pseudorandom_noise) generator for multiple sequences.
 
 ### [chirp.cc](chirp.cc)
 
