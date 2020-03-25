@@ -3,7 +3,7 @@ Compute Room [Impulse Response](https://en.wikipedia.org/wiki/Impulse_response) 
 
 ### Quick start
 
-Generate 48 KHz, 16 bit, 65536 samples long noise sequences with 30 different seeds (each sequence repeated two times):
+Generate 48 KHz, 16 bit, 65536 samples long noise sequences with 30 differing sequences (each sequence repeated two times):
 
 ```
 ./noise noise.wav filter.wav 48000 16 65536 30
@@ -59,7 +59,7 @@ Compute Room [Impulse Response](https://en.wikipedia.org/wiki/Impulse_response).
 
 ### [noise.cc](noise.cc)
 
-[Pseudorandom noise](https://en.wikipedia.org/wiki/Pseudorandom_noise) generator for multiple sequences.
+[Pseudorandom noise](https://en.wikipedia.org/wiki/Pseudorandom_noise) generator for multiple differing sequences.
 
 ### [chirp.cc](chirp.cc)
 

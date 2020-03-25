@@ -48,7 +48,6 @@ struct Compute
 			filter_used[i] = false;
 		int last = -1;
 		int count = 0;
-		input_file.skip(filter_length * 1 / 2);
 		while (input_file.good()) {
 			for (int i = 0; i < filter_length/2; ++i)
 				input[i] = input[i+filter_length/2];
@@ -91,10 +90,11 @@ struct Compute
 				int shift = (clip_length-1)/2;
 				int offset = (pos_max[chosen]-shift+kernel_length)%kernel_length;
 				int rest = kernel_length-offset;
-				for (int i = 0; i < std::min(clip_length, rest); ++i)
+				int okay = std::min(clip_length, rest);
+				for (int i = 0; i < okay; ++i)
 					avg[i] += rir[kernel_length*chosen+offset+i] / val_max[chosen];
-				for (int i = 0; i < std::max(0, clip_length-rest); ++i)
-					avg[std::min(clip_length, rest)+i] += rir[kernel_length*chosen+i] / val_max[chosen];
+				for (int i = 0; i < clip_length-rest; ++i)
+					avg[okay+i] += rir[kernel_length*chosen+i] / val_max[chosen];
 				++count;
 			}
 		}
