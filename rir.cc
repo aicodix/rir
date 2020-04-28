@@ -73,6 +73,8 @@ struct MultipleSequences
 				if (abs_max[max0] < abs_max[i]) {
 					max1 = max0;
 					max0 = i;
+				} else if (abs_max[max1] < abs_max[i]) {
+					max1 = i;
 				}
 			}
 			int chosen = max0;
