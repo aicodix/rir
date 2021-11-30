@@ -13,19 +13,19 @@ Copyright 2020 Ahmet Inan <inan@aicodix.de>
 template <typename cmplx, int filter_length>
 struct MultipleSequences
 {
-	static const int kernel_length = filter_length / 2;
+	static const int kernel_length = filter_length;
 	const int filter_count;
 	typedef typename cmplx::value_type value;
-	DSP::RealToHalfComplexTransform<filter_length, cmplx> fwd;
+	DSP::FastFourierTransform<filter_length, cmplx, -1> fwd;
 	DSP::FastFourierTransform<kernel_length, cmplx, 1> bwd;
-	value input[filter_length];
+	cmplx input[filter_length];
 	cmplx fdom[kernel_length];
 	cmplx tmp[kernel_length];
 	cmplx avg[kernel_length];
 	MultipleSequences(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &filter_file, int clip_length) : filter_count(filter_file.channels())
 	{
 		value *frame = new value[filter_count];
-		value *filter = new value[filter_length*filter_count];
+		cmplx *filter = new cmplx[filter_length*filter_count];
 		for (int j = 0; j < filter_length; ++j) {
 			filter_file.read(frame, 1);
 			for (int i = 0; i < filter_count; ++i)
@@ -51,7 +51,7 @@ struct MultipleSequences
 		while (input_file.good()) {
 			for (int i = 0; i < filter_length/2; ++i)
 				input[i] = input[i+filter_length/2];
-			input_file.read(input+filter_length/2, filter_length/2);
+			input_file.read(reinterpret_cast<value *>(input+filter_length/2), filter_length/2, 2);
 			fwd(fdom, input);
 			for (int j = 0; j < filter_count; ++j) {
 				for (int i = 0; i < kernel_length; ++i)
@@ -102,7 +102,7 @@ struct MultipleSequences
 		}
 		for (int i = 0; i < clip_length; ++i)
 			avg[i] /= count;
-		output_file.write(reinterpret_cast<value *>(avg), clip_length);
+		output_file.write(reinterpret_cast<value *>(avg), clip_length, 2);
 		delete[] filter_used;
 		delete[] val_max;
 		delete[] abs_max;
@@ -116,25 +116,25 @@ struct MultipleSequences
 template <typename cmplx, int filter_length>
 struct RepeatedSequence
 {
-	static const int kernel_length = filter_length / 2;
+	static const int kernel_length = filter_length;
 	typedef typename cmplx::value_type value;
-	DSP::RealToHalfComplexTransform<filter_length, cmplx> fwd;
+	DSP::FastFourierTransform<filter_length, cmplx, -1> fwd;
 	DSP::FastFourierTransform<kernel_length, cmplx, 1> bwd;
-	value input[filter_length];
+	cmplx input[filter_length];
 	cmplx kernel[kernel_length];
 	cmplx tmp[kernel_length];
 	cmplx rir[kernel_length];
 	cmplx avg[kernel_length];
 	RepeatedSequence(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &filter_file, int clip_length)
 	{
-		filter_file.read(input, filter_length);
+		filter_file.read(reinterpret_cast<value *>(input), filter_length, 2);
 		fwd(kernel, input);
 		for (int i = 0; i < kernel_length; ++i)
 			kernel[i] = conj(kernel[i]);
 		for (int i = 0; i < kernel_length; ++i)
 			kernel[i] /= value(filter_length) * sqrt(kernel_length);
 		input_file.skip(filter_length / 2);
-		input_file.read(input, filter_length);
+		input_file.read(reinterpret_cast<value *>(input), filter_length, 2);
 		while (input_file.good()) {
 			fwd(tmp, input);
 			for (int i = 0; i < kernel_length; ++i)
@@ -142,7 +142,7 @@ struct RepeatedSequence
 			bwd(rir, tmp);
 			for (int i = 0; i < kernel_length; ++i)
 				avg[i] += rir[i];
-			input_file.read(input, filter_length);
+			input_file.read(reinterpret_cast<value *>(input), filter_length, 2);
 		}
 		cmplx val_max;
 		value abs_max = 0;
@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	DSP::WriteWAV<value> output_file(output_name, input_file.rate() / 2, input_file.bits(), 2);
+	DSP::WriteWAV<value> output_file(output_name, input_file.rate(), input_file.bits(), 1);
 
 	bool multiple = filter_file.channels() > 1;
 
