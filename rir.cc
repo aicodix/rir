@@ -19,7 +19,7 @@ struct MultipleSequences
 	DSP::RealToHalfComplexTransform<filter_length, cmplx> fwd;
 	DSP::FastFourierTransform<kernel_length, cmplx, 1> bwd;
 	value input[filter_length];
-	cmplx fdom[kernel_length];
+	cmplx fdom[kernel_length+1];
 	cmplx tmp[kernel_length];
 	cmplx avg[kernel_length];
 	MultipleSequences(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &filter_file, int clip_length) : filter_count(filter_file.channels())
@@ -31,7 +31,7 @@ struct MultipleSequences
 			for (int i = 0; i < filter_count; ++i)
 				filter[filter_length*i+j] = frame[i];
 		}
-		cmplx *kernel = new cmplx[kernel_length*filter_count];
+		cmplx *kernel = new cmplx[kernel_length*filter_count+1];
 		for (int i = 0; i < filter_count; ++i)
 			fwd(kernel+kernel_length*i, filter+filter_length*i);
 		delete[] filter;
@@ -121,8 +121,8 @@ struct RepeatedSequence
 	DSP::RealToHalfComplexTransform<filter_length, cmplx> fwd;
 	DSP::FastFourierTransform<kernel_length, cmplx, 1> bwd;
 	value input[filter_length];
-	cmplx kernel[kernel_length];
-	cmplx tmp[kernel_length];
+	cmplx kernel[kernel_length+1];
+	cmplx tmp[kernel_length+1];
 	cmplx rir[kernel_length];
 	cmplx avg[kernel_length];
 	RepeatedSequence(DSP::WriteWAV<value> &output_file, DSP::ReadWAV<value> &input_file, DSP::ReadWAV<value> &filter_file, int clip_length)
